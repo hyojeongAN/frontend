@@ -1,0 +1,23 @@
+nav ul {
+    display: flex;
+    list-style: none;
+    background-color: #1e90ff;
+    padding: 0.5rem 1rem;
+    margin: 0;
+}
+
+nav ul li {
+    margin-right: 1.5rem;
+    cursor: pointer;
+    color: white;
+    transition: color 0.3s;
+}
+
+nav ul li:hover {
+    color: #ffeb3b;
+}
+
+nav ul li.active {
+    font-weight: bold;
+    border-bottom: 2px solid #ffeb3b;
+}
