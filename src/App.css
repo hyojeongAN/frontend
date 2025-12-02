@@ -1,4 +1,33 @@
-#root {
+.App {
+  border: 2px solid pink;
+  height: 100vh;
+  position: relative;
+}
+
+.MainArea {
+  /* border: 2px solid green; */
+  display: flex;
+  position: absolute;
+  margin-left: 20.3%;
+  background-color: blanchedalmond;
+}
+
+.MainDash {
+  /* border: 2px solid red; */
+  height: 100%;
+  margin-left: auto;
+}
+
+
+
+
+
+
+
+
+
+
+/* #root {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
@@ -40,3 +69,4 @@
 .read-the-docs {
   color: #888;
 }
+ */

@@ -1,31 +1,18 @@
+import { Routes, Route } from "react-router-dom";
+import MainLayout from "./layout/MainLayout";
+import Dashboard from "./pages/Dashboard";
+import ErrorLogs from "./pages/ErrorLogs";
+import Settings from "./pages/Settings";
 import axios from 'axios';
-import { useEffect, useState } from 'react';
-import Header from './components/Header.jsx';
-import Footer from './components/Footer.jsx';
 
-function ErrorLogList() {
-  const [logs, setLogs] = useState([]);
-
-  useEffect(() => {
-    axios.get('/api/logs')
-      .then(res => setLogs(res.data))
-      .catch(err => console.error(err));
-  })
-
+export default function App() {
   return (
-    <ul>
-      {logs.map(log =>(
-        <li key={log.id}>
-          [{log.level}] {log.message} ({log.timestamp})
-        </li>
-      ))}
-    </ul>
+    <Routes>
+      <Route path="/"element={<MainLayout />}>
+        <Route index element={<Dashboard />} />
+        <Route path="logs" element={<ErrorLogs />} />
+        <Route path="settings" element={<Settings />} />
+      </Route>
+    </Routes> 
   );
-
 }
-
-function App() {
-
-}
-
-export default App;
