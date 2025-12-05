@@ -6,7 +6,8 @@ import Settings from "./pages/Settings"
 import Profile from "./pages/Profile";
 import UserJoin from "./pages/UserJoin";
 import Login from "./pages/Login";
-import axios from 'axios';
+import { LogOut } from "lucide-react";
+import { AuthProvider } from "./contexts/AuthContext";
 
 export default function App() {
   return (

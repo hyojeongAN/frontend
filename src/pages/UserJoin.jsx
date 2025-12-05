@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom"
+import axios from 'axios';
 
 export default function UserJoin () {
     const navigate = useNavigate();
@@ -55,8 +56,8 @@ export default function UserJoin () {
     }
 
     try {
-      await axios.post("/api/auth/userjoin", {
-        username: name,
+      await axios.post("http://localhost:8082/api/auth/userjoin", {
+        userName: name,
         loginId,
         password, // confirmPassword는 백엔드로 보낼 필요 없음
         email,
