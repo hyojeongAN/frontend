@@ -16,15 +16,16 @@ export default function Login() {
         await login(loginId, password);
         alert('로그인에 성공했습니다');
        } catch (err) {
-        console.error('로그인 실패:', error.response ? error.response.data : error.message);
-        alert(`로그인 실패: ${error.message}`);
+        console.error('로그인 실패:', err.response ? err.response.data : err.message);
+        const errorMessage = err.response ? (err.response.data.message || err.response.data) : err.message;
+        alert(`로그인 실패: ${errorMessage}`);
         setError(errorMessage);
        }
 
     };
 
     return (
-        <div className="flex flex-col items-center justify-center h-screen text-white" onSubmit={handleSubmit}>
+        <div className="flex flex-col items-center justify-center h-screen text-white">
             <h2 className="text-2xl mb-6">로그인</h2>
 
             <form className="flex flex-col gap-4 w-72" onSubmit={handleSubmit}>

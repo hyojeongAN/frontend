@@ -1,7 +1,7 @@
 import { useAuth } from "../contexts/AuthContext"
 
 export default function Profile () {
-    const { user, logout } = useAuth;
+    const { user, logout } = useAuth();
 
     return (
         <div className="p-6 text-white">

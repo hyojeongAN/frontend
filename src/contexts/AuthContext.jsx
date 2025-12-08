@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }) => {
       await localforage.removeItem('jwtToken'); // JWT 토큰 삭제
       setUser(null); // 사용자 정보 초기화
       console.log("로그아웃 성공: 토큰 삭제 및 사용자 정보 초기화");
-      navigate('/login'); // 로그인 페이지로 리다이렉트
+      navigate('/'); // 로그인 페이지로 리다이렉트
     } catch (error) {
       console.error("로그아웃 중 오류 발생:", error);
       alert("로그아웃 중 오류가 발생했습니다.");
@@ -78,7 +78,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     login: async (loginId, password) => { // 로그인 함수 (나중에 여기에 axios.post('login') 로직 넣기)
         try {
-            const response = await axios.post('http://localhost:8080/api/auth/login', { loginId, password });
+            const response = await axios.post('http://localhost:8082/api/auth/login', { loginId, password });
             const { token } = response.data;
             await localforage.setItem('jwtToken', token);
             // 백엔드에서 user 정보를 받아와서 setUser에 넣어야 함
