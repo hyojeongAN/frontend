@@ -1,25 +1,25 @@
 import React from "react";
 
 export default function ErrorLevelTag({ level }) {
-    let bgColor = '';
+  let bgColor = ''; 
 
-    switch (level.toUpperCase()) {
-        case 'ERROR':
-            bgColor = 'bg-red-500';
-            break;
-        case 'WARN':
-            bgColor = 'bg-yellow-500';
-            break;
-        case 'INFO':
-            bgColor = 'bg-blue-500';
-            break;
-        default:
-            bgColor = 'bg-gray-400';
-    }
+  switch (level.toUpperCase()) { 
+    case 'ERROR':
+      bgColor = 'text-red-500'; 
+      break;
+    case 'WARN':
+      bgColor = 'text-yellow-500'; 
+      break;
+    case 'INFO':
+      bgColor = 'text-blue-500'; 
+      break;
+    default:
+      bgColor = 'text-gray-400';
+  }
 
-    return (
-        <span className={'px-2 py-1 rounded-full text-white text-xs ${bgColor}'}>
-            {level.toUpperCase()}
-        </span>
-    );
+  return (
+    <span className={`px-2 py-1 text-xs ${bgColor}`}>
+      {level.toUpperCase()}
+    </span>
+  );
 }
