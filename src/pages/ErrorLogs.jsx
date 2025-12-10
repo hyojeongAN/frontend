@@ -1,10 +1,10 @@
+// src/pages/ErrorLogs.jsx
 import React, { useState, useEffect } from 'react';
-import axios from '../api/axiosConfig';
-import ErrorLevelTag from '../components/error/ErrorLevelTag';
+import axios from '../api/axiosConfig'; // axios 경로 확인
+import ErrorLevelTag from '../components/error/ErrorLevelTag'; // ErrorLevelTag 경로 확인
 
 export default function ErrorLogs() {
   const [logs, setLogs] = useState([]); // 현재 화면에 보여질 로그들
-  const [allFetchedLogs, setAllFetchedLogs] = useState([]); // 서버에서 받아온 전체 로그 (백엔드 페이징 안 될 경우 사용)
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -22,9 +22,10 @@ export default function ErrorLogs() {
   const [currentStartDate, setCurrentStartDate] = useState('');
   const [currentEndDate, setCurrentEndDate] = useState('');
 
-  // 프론트엔드 페이징 시뮬레이션용 상태
-  const [displayLimit, setDisplayLimit] = useState(15); // 현재 화면에 보여줄 최대 로그 개수 (15개씩 더보기)
-  const [hasMoreLogs, setHasMoreLogs] = useState(true); // 더 가져올 로그가 있는지 여부
+  // ✨ 백엔드 페이징을 위한 상태 ✨
+  const [currentPage, setCurrentPage] = useState(0); // 현재 페이지 번호 (백엔드로 보냄)
+  const [totalPages, setTotalPages] = useState(0); // 백엔드에서 받은 총 페이지 수
+  const logsPerPage = 15; // 한 페이지당 로그 개수 (백엔드 @PageableDefault.size와 맞춰야 함)
 
   // 날짜 포맷 함수 (YYYY-MM-DDTHH:mm:ss 형식)
   const formatDateTimeForBackend = (isoString) => {
@@ -40,52 +41,63 @@ export default function ErrorLogs() {
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
   };
 
-  // 에러 로그 API 호출 함수 (백엔드가 모든 데이터를 한 번에 준다고 가정)
+  // 에러 로그 API 호출 함수 (이제 백엔드가 Page 객체로 응답하는 것을 가정)
   const fetchErrorLogs = async (params) => {
+    setLoading(true); // 로딩 시작
+    setError(null);
+
     try {
       const response = await axios.get('/logs/search', { params });
-      return response.data; // 모든 로그가 배열 형태로 들어올 것임
+      setLoading(false); // 로딩 끝
+
+      // ✨ 백엔드가 Page 객체 형태로 응답할 것이므로, content와 totalPages를 추출 ✨
+      if (response.data && response.data.content) {
+        setTotalPages(response.data.totalPages); // 's' 누락 없도록 주의!
+        return response.data.content; // 로그 데이터(배열)만 반환
+      } else {
+        console.error("Unexpected response data format:", response.data);
+        setError("로그 데이터 형식이 올바르지 않습니다.");
+        return [];
+      }
+
     } catch (err) {
+      setLoading(false); // 로딩 끝
       console.error('Error fetching logs:', err);
       setError('로그를 가져오는 중 오류가 발생했습니다.');
-      return []; // 에러 발생 시 빈 배열 반환
+      return [];
     }
   };
 
-  // 초기 로딩 및 필터 변경 시 호출되는 useEffect
-  // 백엔드에서 모든 필터링된 로그를 한 번에 받아와 프론트에서 페이징 시뮬레이션
+  // 초기 로딩 및 필터/페이지 변경 시 호출되는 useEffect
   useEffect(() => {
     const loadLogs = async () => {
-      setLoading(true);
-      setError(null);
-      
-      // 서버에 보낼 파라미터 (page, size 없이 필터만 보냄)
+      // 서버에 보낼 파라미터 (level, keyword, startDate, endDate, page, size 포함!)
       const params = {
         level: currentFilterLevel,
         keyword: currentSearchKeyword,
         startDate: formatDateTimeForBackend(currentStartDate),
         endDate: formatDateTimeForBackend(currentEndDate),
+        page: currentPage, // 현재 페이지 번호!
+        size: logsPerPage, // 한 페이지당 로그 개수!
       };
-      // 빈 값은 파라미터에서 제거 (axios가 자체적으로 처리할 수도 있지만 명시적으로)
       Object.keys(params).forEach(key => (params[key] == null || params[key] === '') && delete params[key]);
 
-      console.log('API Params for fetching all logs:', params);
+      console.log('Fetching logs with params:', params); // 파라미터 제대로 넘어가는지 확인
 
-      const response = await fetchErrorLogs(params); // 필터링된 '모든' 로그를 서버에서 받아옴
-      setAllFetchedLogs(response); // 받아온 모든 로그를 allFetchedLogs에 저장
+      const fetchedLogContent = await fetchErrorLogs(params);
       
-      setLogs(response.slice(0, displayLimit)); // allFetchedLogs에서 displayLimit만큼 잘라서 화면에 보여줄 로그에 저장
-      setHasMoreLogs(response.length > displayLimit); // 전체 로그가 displayLimit보다 많으면 '더보기' 가능
-      setLoading(false);
+      // 초기 로딩 시 (currentPage === 0) 또는 필터 변경 시에는 기존 로그를 새로 받은 로그로 교체
+      // '더보기' 버튼을 눌렀을 때는 (currentPage > 0) 기존 로그에 새로 받은 로그를 추가
+      if (currentPage === 0) {
+        setLogs(fetchedLogContent);
+      } else {
+        setLogs(prevLogs => [...prevLogs, ...fetchedLogContent]);
+      }
     };
 
-    // currentFilterLevel, currentSearchKeyword, currentStartDate, currentEndDate 또는 displayLimit이 변경될 때만 실행
-    // displayLimit이 변경되는 경우는 loadMore 버튼 클릭 시. 이 경우엔 기존 로그에 추가하는 로직이 필요하므로 handleLoadMore에서 직접 logs를 업데이트
-    // 따라서 이 useEffect는 초기 로드 및 필터 변경 시만 allFetchedLogs를 업데이트
-    if (!loading) { // 불필요한 중복 실행 방지 (loading이 false일 때만 실행)
-        loadLogs();
-    }
-  }, [currentFilterLevel, currentSearchKeyword, currentStartDate, currentEndDate]); // displayLimit 의존성 제거
+    loadLogs();
+  }, [currentFilterLevel, currentSearchKeyword, currentStartDate, currentEndDate, currentPage]); // logsPerPage는 상수이므로 의존성 배열에서 제외
+  // currentPage가 바뀌면 이 useEffect가 다시 실행되어 다음 페이지를 가져옴!
 
   // 검색 버튼 클릭 핸들러
   const handleSearch = () => {
@@ -95,19 +107,22 @@ export default function ErrorLogs() {
     setCurrentStartDate(tempStartDate);
     setCurrentEndDate(tempEndDate);
 
-    setDisplayLimit(15); // 검색 버튼 누르면 displayLimit을 다시 초기화
-    setHasMoreLogs(true); // 검색하면 다시 더보기 가능하다고 가정
+    setCurrentPage(0); // 검색 시에는 항상 첫 페이지(0)부터 다시 시작!
+    setTotalPages(0); // 검색 시 총 페이지 수도 초기화 (새로운 검색 결과에 따라 다시 설정될 것)
   };
 
-  // '더보기' 버튼 클릭 핸들러 (프론트엔드에서 데이터 슬라이싱)
+  // '더보기' 버튼 클릭 핸들러 (이제 백엔드에서 다음 페이지를 요청)
   const handleLoadMore = () => {
-    if (loading || !hasMoreLogs) return; // 로딩 중이거나 더 볼 로그 없으면 아무것도 안 함
-
-    const nextLimit = displayLimit + 15; // 다음 보여줄 로그 개수 (현재 개수 + 15)
-    setLogs(allFetchedLogs.slice(0, nextLimit)); // allFetchedLogs에서 nextLimit만큼 잘라서 logs에 저장
-    setHasMoreLogs(allFetchedLogs.length > nextLimit); // 모든 로그 개수가 nextLimit보다 많으면 '더보기' 가능
-    setDisplayLimit(nextLimit); // displayLimit 업데이트
+    // 로딩 중이 아니고, 아직 다음 페이지가 남아있다면
+    // currentPage가 totalPages보다 작을 때 다음 페이지가 존재한다는 뜻
+    if (!loading && (currentPage < totalPages - 1)) {
+      setCurrentPage(prevPage => prevPage + 1); // 현재 페이지 번호 증가 -> useEffect 트리거 -> 다음 페이지 요청
+    }
   };
+
+  // '더보기' 버튼을 보여줄지 말지 결정하는 변수
+  const showLoadMoreButton = !loading && (currentPage < totalPages - 1);
+
 
   // 로그 상세보기 토글 핸들러
   const toggleDetails = (id) => {
@@ -187,7 +202,7 @@ export default function ErrorLogs() {
               </tbody>
             </table>
           </div>
-          {hasMoreLogs && !loading && ( // 로딩 중이 아니고, 더 볼 로그가 있으며, 현재 로그가 하나라도 있을 때만 버튼 보이기
+          {showLoadMoreButton && (
             <div className="flex justify-center mt-4">
               <button
                 onClick={handleLoadMore}
