@@ -1,8 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import axios from '../api/axiosConfig';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import moment from 'moment';
+import { useNavigate } from 'react-router-dom';
 
 const PIE_COLORS = ['#EF4444', '#F97316', '#EAB308', '#4ADE80', '#22D3EE', '#EC4899', '#3B82F6', '#8B5CF6'];
+
+const LEVEL_COLOR_MAP = {
+  'ERROR': '#EF4444',
+  'WARN': '#F97316',
+  'INFO': '#10B981',
+  'DEBUG': '#3B82F6',
+  'TRACE': '#9333EA',
+  'FATAL': '#DC2626', 
+  'default': '#6B7280'
+};
 
 // 원형 차트 아이템 (범례...)
 const CustomLegend = (props) => {
@@ -27,7 +39,7 @@ const renderCustomLegend = (props) => {
   return (
     <ul style={{ paddingTop: '10px', listStyle: 'none', margin: 0, textAlign: 'center'}}>
       {payload.map((entry, index) => (
-        <li key={`item-${index}`} style={{ color: '#ddd', marginBottom: 4, cursor: 'pointer', fontWeight: 'bold' }}>
+        <li key={`item-${index}`} style={{ color: '#ddd', marginBottom: 4, fontWeight: 'bold' }}>
           <span style={{ display: 'inline-block', width: 14, height: 14, backgroundColor: entry.color, marginRight: 8 }}></span>
           {entry.value}
         </li>
@@ -39,31 +51,50 @@ const renderCustomLegend = (props) => {
 export default function Dashboard() {
   const [dailyErrorCounts, setDailyErrorCounts] = useState([]);
   const [errorLevelCounts, setErrorLevelCounts] = useState([]);
+  const [frequentErrors, setFrequentErrors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
     useEffect(() => {
     async function fetchData() {
       try {
-        const today = new Date();
-        const endDate = today.toISOString().slice(0,10);
-        const startDateObj = new Date();
-        startDateObj.setDate(today.getDate() - 7);
-        const startDate = startDateObj.toISOString().slice(0,10);
+        const dailyEndDate = moment().format('YYYY-MM-DDTHH:mm:ss');
+        const dailyStartDate = moment().subtract(7, 'days').format('YYYY-MM-DDTHH:mm:ss');
 
         const dailyRes = await axios.get('/dashboard/daily-error-counts', {
-          params: { startDate: `${startDate}T00:00:00`, endDate: `${endDate}T23:59:59` }
+          params: { startDate: dailyStartDate, endDate: dailyEndDate }
         });
         setDailyErrorCounts(dailyRes.data);
 
+
+        // 원형 차트 데이터 가져오기 (모든 레벨 포함, 오늘 하루치)
+        const today = moment();
+        const levelStartDate = today.startOf('day').format('YYYY-MM-DDTHH:mm:ss'); // 오늘 하루의 시작 (00:00:00)
+        const levelEndDate = today.endOf('day').format('YYYY-MM-DDTHH:mm:ss');     // 오늘 하루의 끝 (23:59:59)
+        
         const levelRes = await axios.get('/dashboard/error-level-counts', {
-          params: { startDate: `${startDate}T00:00:00`, endDate: `${endDate}T23:59:59` }
+          params: { startDate: levelStartDate, endDate: levelEndDate }
         });
         setErrorLevelCounts(levelRes.data);
 
+        // 최근 잦은 에러 목록 가져오기 (가장 많이 발생한 상위 5개)
+        const frequentEndDate = moment().format('YYYY-MM-DDTHH:mm:ss');
+        const frequentStartDate = moment().subtract(7, 'days').format('YYYY-MM-DDTHH:mm:ss');
+        const limit = 5; // 상위 몇 개를 가져올지 설정
+
+        const frequentRes = await axios.get('/dashboard/frequent-errors', {
+          params: {
+            startDate: frequentStartDate,
+            endDate: frequentEndDate,
+            limit: limit,
+          }
+        });
+        setFrequentErrors(frequentRes.data);
+
         setLoading(false);
       } catch (e) {
-        console.error(e);
+        console.error('데이터 로드 중 에러가 발생했습니다:', e); // 에러 메시지 좀 더 명확하게
         setError('데이터 로드 중 에러가 발생했습니다.');
         setLoading(false);
       }
@@ -105,7 +136,7 @@ export default function Dashboard() {
       </div>
 
       <div className="bg-[#1A1C21] rounded-xl shadow-md p-6 mb-8">
-        <h2 className="text-xl font-bold mb-4 text-white">에러 레벨별 통계 (최근 7일)</h2>
+        <h2 className="text-xl font-bold mb-4 text-white">에러 레벨별 통계 (오늘 하루)</h2>
         {errorLevelCounts.length > 0 ? (
           <ResponsiveContainer width="100%" height={410}>
             <PieChart>
@@ -116,7 +147,6 @@ export default function Dashboard() {
                 cx="50%" // 차트의 중심 x 좌표
                 cy="50%" // 차트의 중심 y 좌표
                 outerRadius={100} // 파이 차트의 바깥쪽 반지름 (크기)
-                fill="#8884d8" // 기본 채우기 색상 (아래 Cell에서 각 조각 색상으로 덮어씌워짐)
                 label={({ name, count, percent }) => ` ${name}: ${count}건 (${(percent * 100).toFixed(0)}%)`} // 라벨 내용 (레벨과 퍼센트)
                 // 라벨 텍스트 색상 및 위치 조정
                 labelLine={false} // 라벨과 파이 조각을 연결하는 선을 그릴지 여부
@@ -124,7 +154,7 @@ export default function Dashboard() {
               >
                 {/* 각 레벨(WARN, ERROR 등)에 PIE_COLORS 배열에서 색상 적용 */}
                 {errorLevelCounts.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                  <Cell key={`cell-${index}`} fill={LEVEL_COLOR_MAP[entry.level] || LEVEL_COLOR_MAP['default']} />
                 ))}
               </Pie>
               {/* 툴팁: 마우스 올렸을 때 정보 표시 */}
@@ -134,15 +164,53 @@ export default function Dashboard() {
             </PieChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-gray-400">최근 7일간 에러 레벨별 데이터가 없습니다.</p>
+          <p className="text-gray-400">오늘 에러 레벨별 데이터가 없습니다.</p>
         )}
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <div className="p-6 rounded-xl bg-[#1A1C21]">Card 1</div>
-        <div className="p-6 rounded-xl bg-[#1A1C21]">Card 2</div>
-        <div className="p-6 rounded-xl bg-[#1A1C21]">Card 3</div>
+      <div className="bg-[#1A1C21] rounded-xl shadow-md p-6 mb-8">
+        <h2 className="text-xl font-bold mb-4 text-white">최근 잦은 에러 목록 (상위 {frequentErrors.length}개)</h2> {/* 제목 */}
+        
+        {frequentErrors.length > 0 ? (
+          <div className="overflow-x-auto"> {/* 내용이 길어지면 스크롤 */}
+            <table className="min-w-full divide-y divide-gray-700">
+              <thead>
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">에러 메시지</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">발생 횟수</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+
+                {frequentErrors.map((errorItem, index) => (
+                  <tr key={index} className="hover:bg-gray-700 cursor-pointer" 
+                    onClick={() => {
+                      const endDate = moment().format('YYYY-MM-DDTHH:mm:ss');
+                      const startDate = moment().subtract(7, 'days').format('YYYY-MM-DDTHH:mm:ss');
+
+                      navigate(`/logs?keyword=${encodeURIComponent(errorItem.message)}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`);
+                    }}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      {errorItem.message.length > 100 ? errorItem.message.substring(0, 100) + '...' : errorItem.message} {/* 메시지가 너무 길면 자르기 */}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{errorItem.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-gray-400">최근 잦은 에러 데이터가 없습니다.</p>
+        )}
       </div>
+
     </div>
   );
 }
+
+{/* <div className="grid grid-cols-3 gap-4">
+  <div className="p-6 rounded-xl bg-[#1A1C21]">Card 1</div>
+  <div className="p-6 rounded-xl bg-[#1A1C21]">Card 2</div>
+  <div className="p-6 rounded-xl bg-[#1A1C21]">Card 3</div>
+</div>
+</div> */}

@@ -1,28 +1,36 @@
-// src/pages/ErrorLogs.jsx
 import React, { useState, useEffect } from 'react';
-import axios from '../api/axiosConfig'; // axios 경로 확인
-import ErrorLevelTag from '../components/error/ErrorLevelTag'; // ErrorLevelTag 경로 확인
+import axiosInstance from '../api/axiosConfig';
+import ErrorLevelTag from '../components/error/ErrorLevelTag';
+import { useSearchParams } from 'react-router-dom';
+import moment from 'moment';
 
 export default function ErrorLogs() {
   const [logs, setLogs] = useState([]); // 현재 화면에 보여질 로그들
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
   const [expandedLogId, setExpandedLogId] = useState(null); // 상세보기 토글 ID
 
+  // URL 파라미터들을 가져옴
+  const [searchParams] = useSearchParams();
+
+  const initialLevel = searchParams.get('level') || '';
+  const initialKeyword = searchParams.get('keyword') || '';
+  const initialStartDate = searchParams.get('startDate') || '';
+  const initialEndDate = searchParams.get('endDate') || '';
+
   // 필터 UI에 보이는 임시 상태
-  const [tempFilterLevel, setTempFilterLevel] = useState('');
-  const [tempSearchKeyword, setTempSearchKeyword] = useState('');
-  const [tempStartDate, setTempStartDate] = useState('');
-  const [tempEndDate, setTempEndDate] = useState('');
+  const [tempFilterLevel, setTempFilterLevel] = useState(initialLevel);
+  const [tempSearchKeyword, setTempSearchKeyword] = useState(initialKeyword);
+  const [tempStartDate, setTempStartDate] = useState(initialStartDate);
+  const [tempEndDate, setTempEndDate] = useState(initialEndDate);
 
   // 실제 API 호출에 사용되는 필터 상태
-  const [currentFilterLevel, setCurrentFilterLevel] = useState('');
-  const [currentSearchKeyword, setCurrentSearchKeyword] = useState('');
-  const [currentStartDate, setCurrentStartDate] = useState('');
-  const [currentEndDate, setCurrentEndDate] = useState('');
+  const [currentFilterLevel, setCurrentFilterLevel] = useState(initialLevel);
+  const [currentSearchKeyword, setCurrentSearchKeyword] = useState(initialKeyword);
+  const [currentStartDate, setCurrentStartDate] = useState(initialStartDate);
+  const [currentEndDate, setCurrentEndDate] = useState(initialEndDate);
 
-  // ✨ 백엔드 페이징을 위한 상태 ✨
+  // 백엔드 페이징을 위한 상태
   const [currentPage, setCurrentPage] = useState(0); // 현재 페이지 번호 (백엔드로 보냄)
   const [totalPages, setTotalPages] = useState(0); // 백엔드에서 받은 총 페이지 수
   const logsPerPage = 15; // 한 페이지당 로그 개수 (백엔드 @PageableDefault.size와 맞춰야 함)
@@ -47,10 +55,10 @@ export default function ErrorLogs() {
     setError(null);
 
     try {
-      const response = await axios.get('/logs/search', { params });
+      const response = await axiosInstance.get('/logs/search', { params });
       setLoading(false); // 로딩 끝
 
-      // ✨ 백엔드가 Page 객체 형태로 응답할 것이므로, content와 totalPages를 추출 ✨
+      // 백엔드가 Page 객체 형태로 응답할 것이므로, content와 totalPages를 추출
       if (response.data && response.data.content) {
         setTotalPages(response.data.totalPages); // 's' 누락 없도록 주의!
         return response.data.content; // 로그 데이터(배열)만 반환
@@ -141,8 +149,8 @@ export default function ErrorLogs() {
           <option value="INFO">INFO</option>
         </select>
         <input type="text" placeholder="메시지 또는 소스 검색" value={tempSearchKeyword} onChange={e => setTempSearchKeyword(e.target.value)} className="flex-grow min-w-[150px] border border-gray-300 dark:border-gray-600 p-2 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        <input type="datetime-local" value={tempStartDate} onChange={e => setTempStartDate(e.target.value)} className="flex-none w-[200px] border border-gray-300 dark:border-gray-600 p-2 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" step="1" title="시작 일시" />
-        <input type="datetime-local" value={tempEndDate} onChange={e => setTempEndDate(e.target.value)} className="flex-none w-[200px] border border-gray-300 dark:border-gray-600 p-2 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" step="1" title="종료 일시" />
+        <input type="datetime-local" value={tempStartDate ? moment(tempStartDate).format('YYYY-MM-DDTHH:mm:ss') : ''} onChange={e => setTempStartDate(e.target.value)} className="flex-none w-[200px] border border-gray-300 dark:border-gray-600 p-2 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" step="1" title="시작 일시" />
+        <input type="datetime-local" value={tempEndDate ? moment(tempStartDate).format('YYYY-MM-DDTHH:mm') : ''} onChange={e => setTempEndDate(e.target.value)} className="flex-none w-[200px] border border-gray-300 dark:border-gray-600 p-2 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" step="1" title="종료 일시" />
 
         <button onClick={handleSearch} className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded'>
           검색
