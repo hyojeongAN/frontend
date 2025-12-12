@@ -1,4 +1,4 @@
-import { Routes, Route, useNavigate } from "react-router-dom"; // useNavigate import 추가
+import { Routes, Route, useNavigate, Navigate } from "react-router-dom"; // useNavigate import 추가
 import MainLayout from "./MainLayout";
 import Dashboard from "./pages/Dashboard";
 import ErrorLogs from "./pages/ErrorLogs";
@@ -21,8 +21,8 @@ const ProtectedRoute = ({ children }) => {
 
   // user가 없거나 인증되지 않았으면 로그인 페이지로 리다이렉트
   if (!user || !user.isAuthenticated) {
-    navigate('/login');
-    return null; // 리다이렉트 후에는 컴포넌트 렌더링 중지
+    // navigate('/login');
+    return <Navigate to="/login" replace />; // 리다이렉트 후에는 컴포넌트 렌더링 중지
   }
 
   return children; // 인증된 사용자만 children 렌더링

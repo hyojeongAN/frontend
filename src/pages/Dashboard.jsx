@@ -177,6 +177,7 @@ export default function Dashboard() {
               <thead>
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">에러 메시지</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">에러 레벨</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">발생 횟수</th>
                 </tr>
               </thead>
@@ -193,6 +194,7 @@ export default function Dashboard() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                       {errorItem.message.length > 100 ? errorItem.message.substring(0, 100) + '...' : errorItem.message} {/* 메시지가 너무 길면 자르기 */}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{errorItem.level}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{errorItem.count}</td>
                   </tr>
                 ))}

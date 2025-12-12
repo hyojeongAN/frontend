@@ -81,7 +81,7 @@ export default function ErrorLogs() {
     const loadLogs = async () => {
       // 서버에 보낼 파라미터 (level, keyword, startDate, endDate, page, size 포함!)
       const params = {
-        level: currentFilterLevel,
+        level: currentFilterLevel || null,
         keyword: currentSearchKeyword,
         startDate: formatDateTimeForBackend(currentStartDate),
         endDate: formatDateTimeForBackend(currentEndDate),
@@ -109,7 +109,6 @@ export default function ErrorLogs() {
 
   // 검색 버튼 클릭 핸들러
   const handleSearch = () => {
-    // 임시 필터 값들을 실제 필터 값으로 업데이트
     setCurrentFilterLevel(tempFilterLevel);
     setCurrentSearchKeyword(tempSearchKeyword);
     setCurrentStartDate(tempStartDate);
@@ -117,6 +116,15 @@ export default function ErrorLogs() {
 
     setCurrentPage(0); // 검색 시에는 항상 첫 페이지(0)부터 다시 시작!
     setTotalPages(0); // 검색 시 총 페이지 수도 초기화 (새로운 검색 결과에 따라 다시 설정될 것)
+
+    const newSearchParams = new URLSearchParams();
+    if (tempFilterLevel) newSearchParams.set('level', tempFilterLevel);
+    if (tempSearchKeyword) newSearchParams.set('keyword', tempSearchKeyword);
+    if (tempStartDate) newSearchParams.set('startDate', tempStartDate);
+    if (tempEndDate) newSearchParams.set('endDate', tempEndDate);
+    newSearchParams.set('page', '0');
+
+    window.history.pushState(null, '', `?${newSearchParams.toString()}`);
   };
 
   // '더보기' 버튼 클릭 핸들러 (이제 백엔드에서 다음 페이지를 요청)
@@ -146,11 +154,11 @@ export default function ErrorLogs() {
           <option value="">-- 레벨 --</option>
           <option value="ERROR">ERROR</option>
           <option value="WARN">WARN</option>
-          <option value="INFO">INFO</option>
+          <option value="FATAL">FATAL</option>
         </select>
         <input type="text" placeholder="메시지 또는 소스 검색" value={tempSearchKeyword} onChange={e => setTempSearchKeyword(e.target.value)} className="flex-grow min-w-[150px] border border-gray-300 dark:border-gray-600 p-2 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         <input type="datetime-local" value={tempStartDate ? moment(tempStartDate).format('YYYY-MM-DDTHH:mm:ss') : ''} onChange={e => setTempStartDate(e.target.value)} className="flex-none w-[200px] border border-gray-300 dark:border-gray-600 p-2 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" step="1" title="시작 일시" />
-        <input type="datetime-local" value={tempEndDate ? moment(tempStartDate).format('YYYY-MM-DDTHH:mm') : ''} onChange={e => setTempEndDate(e.target.value)} className="flex-none w-[200px] border border-gray-300 dark:border-gray-600 p-2 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" step="1" title="종료 일시" />
+        <input type="datetime-local" value={tempEndDate ? moment(tempEndDate).format('YYYY-MM-DDTHH:mm') : ''} onChange={e => setTempEndDate(e.target.value)} className="flex-none w-[200px] border border-gray-300 dark:border-gray-600 p-2 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" step="1" title="종료 일시" />
 
         <button onClick={handleSearch} className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded'>
           검색

@@ -33,13 +33,13 @@ axiosInstance.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
-        if (error.response && (error.response.status === 401 || error.response.status === 403) && !originalRequest._retry) {
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) { //&& !originalRequest._retry) {
             originalRequest._retry = true; 
             console.warn("401 Unauthorized 또는 403 Forbidden - 토큰 만료 또는 유효하지 않음. 로그인 화면으로 이동합니다.");
             
             await localforage.removeItem('jwtToken'); // 만료된 토큰 삭제
 
-            error.response.data.isAuthError = true;
+            // error.response.data.isAuthError = true;
             
             // window.location.href = '/login'; // 로그인 페이지로 리다이렉트
         }
