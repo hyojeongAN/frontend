@@ -22,7 +22,7 @@ export default function Profile () {
                 console.error("Faild to fetch detailed user data for profile:", err);
                 setError("상세 프로필 정보를 불러오는데 실패했습니다.");
                 // 에러 발생 시 (예: 토큰 만료) 로그인 페이지 등으로 리다이렉트할 수도 있음
-                // navigate('/login'); // 로그인 페이지 바로 이동
+                navigate('/login'); // 로그인 페이지 바로 이동
             } finally {
                 setLoading(false);
             }
@@ -31,6 +31,7 @@ export default function Profile () {
         const fetchErrorStats = async () => {
             try {
                 const response = await axiosInstance.get('/logs/statistics');
+                console.log("백엔드에서 받은 에러 통계 데이터:", response.data);
                 setErrorStats(response.data);
             } catch (err) {
                 console.error("Failed to fetch error statistics:", err);
@@ -41,7 +42,8 @@ export default function Profile () {
 
         // user가 AuthContext에 존재할 때만 API 호출 (로그인 상태인 경우)
         if (user) {
-            fetchDetailedUserData();
+            Promise.all([fetchDetailedUserData(), fetchErrorStats()])
+                .finally(() => setLoading(false));
         } else {
             // user가 AuthContext에 없으면 (로그아웃 상태 등) 로딩을 바로 종료
             setLoading(false);
@@ -77,7 +79,7 @@ export default function Profile () {
             <h2 className="text-xl mb-4" style={{ textAlign: 'center', color: '#fff' }}>
                 {displayUser.userName || displayUser.username}님의 프로필
             </h2>
-            {error && <p style={{ color: 'red' }}>{error}</p>} {/* 스타일 오타 수정: 'red;' -> 'red' */}
+            {error && <p style={{ color: 'red' }}>{error}</p>}
 
             <div style={{ marginBottom: '20px'}}>
                 {/* <p> 태그 안에 <div>는 올 수 없어 <div>를 <p>로 변경 */}
@@ -89,11 +91,11 @@ export default function Profile () {
                     <span style={{ color: '#fff' }}>이메일 : <strong>{displayUser.email}</strong></span> 
                 </p>
                 )}
-                {displayUser.role && (
+                {/* {displayUser.role && (
                     <p className="text-gray-300" style={{ marginBottom: '8px' }}>
                         <span style={{ color: '#fff' }}>역할 : <strong>{displayUser.role}</strong></span>
                     </p>
-                )}
+                )} */}
                 {displayUser.createdAt && (
                     <p className="text-gray-300" style={{ marginBottom: '8px' }}>
                     <span style={{ color: '#fff' }}>가입일 : {new Date(displayUser.createdAt).toLocaleDateString()}</span>
@@ -112,11 +114,11 @@ export default function Profile () {
                 <p className="text-gray-300">오늘 발생한 에러: {errorStats.todayErrorCount}</p>
             </section>
 
-            <div style={{ textAlign: 'center', marginTop: '30px' }}>
+            {/* <div style={{ textAlign: 'center', marginTop: '30px' }}>
                 <button onClick={() => navigate('/settings')} className="mt-4 bg-blue-600 px-4 py-2 rounded" style={{ transition: 'background-color 0.3s ease' }}>
                     내 정보 수정하기
                 </button>
-            </div>
+            </div> */}
 
             <button onClick={logout} className="mt-4 bg-red-600 px-4 py-2 rounded">
                 로그아웃

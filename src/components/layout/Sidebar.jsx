@@ -23,12 +23,12 @@ export default function Sidebar() {
           Error Logs
         </Link>
 
-        <Link
+        {/* <Link
           to="/settings"
           className="flex items-center gap-3 px-3 py-2 rounded hover:bg-white/5">
           <Settings size={18}/>
           Settings
-        </Link>
+        </Link> */}
       </nav>
     </aside>
   );

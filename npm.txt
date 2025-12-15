@@ -1,0 +1,17 @@
+npm install
+
+npm install localforage
+npm install axios 
+react-router-dom localforage
+npm install recharts
+npm install moment
+
+npm install axios
+npm install localforage
+npm install lucide-react
+npm install moment
+npm install react
+npm install react-dom
+npm install react-router-dom
+npm install recharts
+npm install styled-components
