@@ -3,6 +3,8 @@ import axios from '../api/axiosConfig';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
+import KpiCard from '../components/ui/KpiCard.jsx';
+import StatusBanner from '../components/ui/StatusBanner.jsx';
 
 const PIE_COLORS = ['#EF4444', '#F97316', '#EAB308', '#4ADE80', '#22D3EE', '#EC4899', '#3B82F6', '#8B5CF6'];
 
@@ -48,6 +50,7 @@ const renderCustomLegend = (props) => {
   );
 };
 
+
 export default function Dashboard() {
   const [dailyErrorCounts, setDailyErrorCounts] = useState([]);
   const [errorLevelCounts, setErrorLevelCounts] = useState([]);
@@ -55,7 +58,27 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  
+  const todayTotal = dailyErrorCounts.at(-1)?.count ?? 0;
 
+  const yesterdayTotal =
+   dailyErrorCounts.length > 1
+    ? dailyErrorCounts.at(-2)?.count ?? 0
+    : 0;
+
+  const diffPercent =
+    yesterdayTotal === 0
+      ? 0
+     : Math.round(((todayTotal - yesterdayTotal) / yesterdayTotal) * 100);
+
+  const errorFatalCount = errorLevelCounts
+    .filter(e => e.level === 'ERROR' || e.level === 'FATAL')
+    .reduce((sum, e) => sum + e.count, 0);
+
+  const [recentHourCount, setRecentHourCount] = useState(0);
+
+
+  
     useEffect(() => {
     async function fetchData() {
       try {
@@ -92,9 +115,16 @@ export default function Dashboard() {
         });
         setFrequentErrors(frequentRes.data);
 
+        try {
+          const recentRes = await axios.get('/dashboard/recent-error-count');
+          setRecentHourCount(recentRes.data.count);
+        } catch {
+          console.warn('최근 1시간 API 없음')
+          setRecentHourCount(0);
+        }
+
         setLoading(false);
       } catch (e) {
-        console.error('데이터 로드 중 에러가 발생했습니다:', e); // 에러 메시지 좀 더 명확하게
         setError('데이터 로드 중 에러가 발생했습니다.');
         setLoading(false);
       }
@@ -112,14 +142,26 @@ export default function Dashboard() {
 
   return (
     <div className="text-white">
+      <StatusBanner errorCount={todayTotal} />
+
+     <div className="grid grid-cols-4 gap-4 mb-8">
+       <KpiCard title="오늘 에러 수" value={todayTotal} color="text-blue-400" />
+       <KpiCard title="ERROR / FATAL" value={errorFatalCount} color="text-red-500" />
+       <KpiCard title="최근 1시간" value={recentHourCount} color={recentHourCount > 10 ? 'text-red-400' : 'text-orange-400'} />
+       <KpiCard title="전일 대비" value={`${diffPercent}%`} diff={diffPercent} color="text-purple-400" />
+      </div>
       <h2 className="text-xl font-semibold mb-4">Dashboard</h2>
 
       <div className="bg-[#1A1C21] rounded-xl shadow-md p-6 mb-8">
-        <h2 className="text-xl font-bold mb-4 text-white">일별 에러 발생 추이 (최근 7일)</h2>
+        <h2 className="text-xl font-bold mb-4 text-white">일별 에러 발생 추이</h2>
+        <p className="text-sm text-gray-400 mb-4">최근 7일 기준</p>
         {dailyErrorCounts.length > 0 ? (
           <ResponsiveContainer width="100%" height={350}>
             <BarChart
               data={dailyErrorCounts}
+              dataKey="count"
+              fill="#4F46E5"
+              radius={[6, 6, 0, 0]}
               margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#444" /> {/* 그리드 색상 변경 */}
